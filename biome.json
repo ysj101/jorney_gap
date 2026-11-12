@@ -1,7 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
   "files": {
-    "includes": ["**", "!**/dist", "!pnpm-lock.yaml", "!docs/spec.md"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!pnpm-lock.yaml",
+      "!docs/spec.md",
+      "!packages/core/schema"
+    ]
   },
   "formatter": { "indentStyle": "space", "indentWidth": 2 },
   "linter": { "enabled": true }

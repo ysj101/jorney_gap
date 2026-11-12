@@ -12,7 +12,9 @@
     "typecheck": "pnpm -r typecheck && tsc --noEmit -p tests/tsconfig.json",
     "lint": "biome check .",
     "test": "vitest run",
-    "audit": "pnpm audit --audit-level high"
+    "audit": "pnpm audit --audit-level high",
+    "schema:check": "node scripts/schemas.mjs",
+    "schema:generate": "node scripts/schemas.mjs --write"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",

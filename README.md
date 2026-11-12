@@ -4,7 +4,7 @@ JourneyGap observes application-defined journeys using OpenTelemetry traces and 
 
 ## Development status
 
-Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. Only the workspace build and package smoke tests are currently available. Web consent, OTLP export, Relay, analysis, CLI, and browser acceptance tests are being implemented in the [issue tracker](https://github.com/ysj101/jorney_gap/issues). The full contract is in [docs/spec.md](docs/spec.md).
+Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. The workspace build, shared configuration validation, generated JSON Schemas, and unit tests are available. Web consent, OTLP export, Relay, analysis, CLI, and browser acceptance tests are being implemented in the [issue tracker](https://github.com/ysj101/jorney_gap/issues). The full contract is in [docs/spec.md](docs/spec.md).
 
 ## Build from source
 
@@ -22,7 +22,7 @@ pnpm test
 pnpm audit
 ```
 
-Build before tests: package smoke tests resolve the actual generated ESM exports and declarations. `packages/core`, `web`, `relay`, and `cli` currently provide build scaffolding. Generated artifacts are excluded from Git.
+Build before tests: package smoke tests resolve the actual generated ESM exports and declarations. `packages/core` provides shared configuration types and validation; see [configuration](docs/configuration.md). `web`, `relay`, and `cli` currently provide build scaffolding. Generated artifacts are excluded from Git.
 
 ## Intended integration
 
