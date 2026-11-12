@@ -1,3 +1,4 @@
+export * from "./analyze.js";
 export {
   configSchema,
   journeySchema,
