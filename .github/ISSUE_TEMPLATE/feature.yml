@@ -1,0 +1,10 @@
+name: Implementation or feature
+description: Propose a focused change
+body:
+  - type: textarea
+    id: scope
+    attributes:
+      label: Behavior and acceptance criteria
+      description: Reference docs/spec.md and describe a testable, independently reviewable change.
+    validations:
+      required: true
