@@ -6,7 +6,8 @@
       "!**/dist",
       "!pnpm-lock.yaml",
       "!docs/spec.md",
-      "!packages/core/schema"
+      "!packages/core/schema",
+      "!packages/core/src/generated"
     ]
   },
   "formatter": { "indentStyle": "space", "indentWidth": 2 },

@@ -1,14 +1,16 @@
-import { Ajv } from "ajv";
-import { configSchema, relayConfigSchema } from "./config-schema.js";
+import { validateRelay, validateWeb } from "./generated/validators.cjs";
 import type {
   JourneyDefinition,
   JourneyGapConfig,
   RelayConfig,
 } from "./types.js";
 
-const ajv = new Ajv({ allErrors: true, useDefaults: true });
-const webValidator = ajv.compile<JourneyGapConfig>(configSchema);
-const relayValidator = ajv.compile<RelayConfig>(relayConfigSchema);
+const webValidator = validateWeb as (
+  value: unknown,
+) => value is JourneyGapConfig;
+const relayValidator = validateRelay as (
+  value: unknown,
+) => value is RelayConfig;
 
 export type ValidationResult<T> =
   | { valid: true; value: T }

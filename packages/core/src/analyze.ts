@@ -1,5 +1,4 @@
-import { Ajv } from "ajv";
-import { journeySchema } from "./config-schema.js";
+import { validateJourney } from "./generated/validators.cjs";
 import type { JourneyDefinition, JourneyEvent } from "./types.js";
 
 export type Finding = {
@@ -54,7 +53,9 @@ type Attempt = {
 const DAY = 86400000;
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const validateDefinition = new Ajv().compile<JourneyDefinition>(journeySchema);
+const validateDefinition = validateJourney as (
+  value: unknown,
+) => value is JourneyDefinition;
 
 function median(values: number[]): number | null {
   if (!values.length) return null;

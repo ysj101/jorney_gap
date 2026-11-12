@@ -14,7 +14,9 @@
     "test": "vitest run",
     "audit": "pnpm audit --audit-level high",
     "schema:check": "node scripts/schemas.mjs",
-    "schema:generate": "node scripts/schemas.mjs --write"
+    "schema:generate": "node scripts/schemas.mjs --write",
+    "validators:check": "node packages/core/scripts/validators.mjs",
+    "validators:generate": "node packages/core/scripts/validators.mjs --write"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
