@@ -1,0 +1,10 @@
+name: Bug report
+description: Report a reproducible problem using synthetic data
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction, version, and environment
+      description: Include expected and observed behavior. Do not include secrets or real telemetry.
+    validations:
+      required: true
