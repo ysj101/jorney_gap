@@ -16,6 +16,7 @@ jobs:
       - run: npm install --global pnpm@10.30.2
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - run: pnpm schema:check
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test

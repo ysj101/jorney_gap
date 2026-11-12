@@ -1,2 +1,7 @@
-// Public APIs are introduced by the corresponding implementation issues.
-export {};
+export {
+  configSchema,
+  journeySchema,
+  relayConfigSchema,
+} from "./config-schema.js";
+export * from "./schema.js";
+export * from "./types.js";
