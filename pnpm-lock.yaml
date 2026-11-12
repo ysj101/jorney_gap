@@ -32,7 +32,11 @@ importers:
         specifier: 3.1.1
         version: 3.1.1
 
-  packages/relay: {}
+  packages/relay:
+    dependencies:
+      '@journeygap/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/web: {}
 
