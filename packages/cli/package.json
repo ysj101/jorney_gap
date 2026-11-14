@@ -27,5 +27,14 @@
   },
   "bin": {
     "journeygap": "./dist/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ysj101/jorney_gap.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/ysj101/jorney_gap#readme",
+  "bugs": {
+    "url": "https://github.com/ysj101/jorney_gap/issues"
   }
 }

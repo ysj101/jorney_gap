@@ -1,6 +1,6 @@
 # Privacy and operator notice template
 
-JourneyGap is designed for opt-in, minimal telemetry. This document describes the implementation target, not deployed functionality. Operators must adapt the template to their actual setup, jurisdiction, processors, and retention policy before enabling collection.
+JourneyGap is designed for opt-in, minimal telemetry. This document describes library behavior; the operator must configure and disclose their actual deployment. Operators must adapt the template to their actual setup, jurisdiction, processors, and retention policy before enabling collection.
 
 ## Example notice (replace bracketed fields)
 
@@ -10,7 +10,7 @@ Events contain random event IDs, a tab-scoped session ID, journey attempt IDs, d
 
 Telemetry is sent to [receiver and operator], and optionally forwarded to [processors and locations]. Server-side rate limiting may temporarily use IP addresses; JourneyGap does not persist them or log them by default. Separately document any reverse-proxy/provider access logs and their retention. Do not claim that those systems never receive IPs.
 
-Records are retained for [retention period; Relay target default is 14 days], then deleted. Aggregated reports show observed counts and timing, not individual public histories. Failed delivery, sampling, consent withdrawal, or a closed browser can cause missing events; these observations do not prove why a person stopped. Contact [privacy contact] for questions and applicable access/deletion requests. [Describe lawful basis, rights, and international transfers appropriate to your operation.]
+Records are retained for [retention period; Relay default is 14 days], then deleted. Aggregated reports show observed counts and timing, not individual public histories. Failed delivery, sampling, consent withdrawal, or a closed browser can cause missing events; these observations do not prove why a person stopped. Contact [privacy contact] for questions and applicable access/deletion requests. [Describe lawful basis, rights, and international transfers appropriate to your operation.]
 
 ## Operator configuration
 

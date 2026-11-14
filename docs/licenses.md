@@ -1,0 +1,7 @@
+# License verification
+
+JourneyGap source and all four public packages use Apache-2.0. Each package contains the identical root LICENSE and its own README. Compiled packages reference dependencies normally rather than vendoring or bundling their source. Package tarball checks reject missing license/docs/build exports, unexpected paths and unresolved workspace versions.
+
+`pnpm licenses:check` checks installed dependency metadata against the reviewed expressions MIT, MIT OR Apache-2.0, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, MPL-2.0, BlueOak-1.0.0, CC0-1.0 and ISC. Any unknown/missing expression fails. The current MPL entries are lightningcss and its native platform package in the Vite development toolchain. Native optional packages differ by OS; CI independently checks its installed platform. Runtime OpenTelemetry dependencies retain their Apache-2.0 notices. This is a technical metadata/inventory gate, not a substitute for reviewing actual license text and redistribution obligations when dependencies or bundling change.
+
+The command writes a name/version/license/homepage inventory to Git-ignored artifacts/dependency-licenses.json, without local filesystem paths. Preserve dependency license and notice files when redistributing. Before a release, review the inventory, any changed license texts/notices, package contents, and generated browser bundles. A dependency update that introduces another expression requires an explicit policy review rather than an automatic allowlist expansion.
