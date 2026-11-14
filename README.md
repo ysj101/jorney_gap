@@ -4,7 +4,7 @@ JourneyGap observes application-defined journeys using OpenTelemetry traces and 
 
 ## Development status
 
-Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. Shared validation, privacy filtering, journey analysis, the Relay, and the consent-gated Web client/OTLP transport are implemented. Navigation, CLI, and browser acceptance tests are being implemented in the [issue tracker](https://github.com/ysj101/jorney_gap/issues). The full contract is in [docs/spec.md](docs/spec.md).
+Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. Shared validation, privacy filtering, journey analysis, the Relay, and the consent-gated Web client with navigation/OTLP transport are implemented. CLI and browser acceptance tests are being implemented in the [issue tracker](https://github.com/ysj101/jorney_gap/issues). The full contract is in [docs/spec.md](docs/spec.md).
 
 ## Build from source
 

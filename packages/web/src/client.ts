@@ -13,6 +13,7 @@ import {
   readConsent,
   SESSION_KEY,
 } from "./consent.js";
+import { observeNavigation } from "./navigation.js";
 import { createTelemetry, type Telemetry, type WebEvent } from "./transport.js";
 
 const KEY = Symbol.for("journeygap.client.v1");
@@ -66,6 +67,7 @@ function createClient(config: JourneyGapConfig): Registry {
   let telemetry: Telemetry | undefined;
   let closed = false;
   let ui: ReturnType<typeof compactConsent> | undefined;
+  let navigation: ReturnType<typeof observeNavigation> | undefined;
   const attempts = new Map<string, { instanceId: string; position: number }>();
   const calls = new Map<string, string>();
   const shuttingDown = new Set<Promise<void>>();
@@ -97,6 +99,7 @@ function createClient(config: JourneyGapConfig): Registry {
     return value;
   }
   function stop(clearStored = true): void {
+    navigation?.reset();
     const previous = telemetry;
     telemetry = undefined;
     sessionId = undefined;
@@ -128,6 +131,7 @@ function createClient(config: JourneyGapConfig): Registry {
       if (value) {
         sessionId = session();
         telemetry = createTelemetry(config);
+        navigation?.refresh();
       } else stop();
       ui?.update(value);
     } catch {
@@ -201,6 +205,7 @@ function createClient(config: JourneyGapConfig): Registry {
       for (const cleanup of [
         () => stop(false),
         () => ui?.remove(),
+        () => navigation?.stop(),
         () => window.removeEventListener("storage", storage),
         () => window.removeEventListener("pagehide", pagehide),
         () => {
@@ -228,6 +233,11 @@ function createClient(config: JourneyGapConfig): Registry {
     void telemetry?.flush().catch(() => {});
   };
   if (config.enabled) {
+    navigation = observeNavigation(
+      config.routes ?? [],
+      (routeId) => send({ eventType: "navigation", routeId }),
+      () => consent && !!telemetry && !closed,
+    );
     window.addEventListener("storage", storage);
     window.addEventListener("pagehide", pagehide);
     if (config.consent.ui === "compact") {

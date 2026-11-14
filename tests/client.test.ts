@@ -48,7 +48,10 @@ beforeEach(() => {
   discard = vi.fn();
   shutdown = vi.fn(async () => {});
   factory = vi.spyOn(transport, "createTelemetry").mockImplementation(() => ({
-    record: (event) => events.push(structuredClone(event)),
+    // Manual API behavior is isolated here; navigation has its own lifecycle tests.
+    record: (event) => {
+      if (event.eventType !== "navigation") events.push(structuredClone(event));
+    },
     discard,
     shutdown,
     flush: async () => {},
