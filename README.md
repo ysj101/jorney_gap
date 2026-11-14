@@ -4,7 +4,7 @@ JourneyGap observes application-defined journeys using OpenTelemetry traces and 
 
 ## Development status
 
-Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. Shared validation, privacy filtering, journey analysis, Relay, consent-gated Web client, CLI init/import/report are implemented. Uninstall/doctor and browser acceptance tests are being implemented in the [issue tracker](https://github.com/ysj101/jorney_gap/issues). The full contract is in [docs/spec.md](docs/spec.md).
+Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. Shared validation, privacy filtering, journey analysis, Relay, consent-gated Web client, CLI init/uninstall/doctor/import/report and browser acceptance tests are implemented. Collector acceptance and release-security gates are tracked in the [issue tracker](https://github.com/ysj101/jorney_gap/issues). The full contract is in [docs/spec.md](docs/spec.md).
 
 ## Build from source
 
@@ -19,6 +19,7 @@ pnpm build
 pnpm typecheck
 pnpm lint
 pnpm test
+pnpm test:e2e
 pnpm audit
 ```
 
@@ -26,7 +27,7 @@ Build before tests: package smoke tests resolve the actual generated ESM exports
 
 ## Intended integration
 
-The following commands describe the target interface; they are not available yet:
+The CLI works from source as `node /absolute/path/to/jorney_gap/packages/cli/dist/main.js`. Packages remain unpublished; after a separately approved publication the equivalent interface is:
 
 ```sh
 npx @journeygap/cli@<version> init --endpoint https://ingest.example.org/v1/traces
@@ -36,9 +37,21 @@ npx @journeygap/cli@<version> report --db ./data/journeygap.db --journey first-t
 npx @journeygap/cli@<version> uninstall
 ```
 
-The SDK will require opt-in consent before initializing telemetry. Navigation is automatic; meaningful steps require the application API. Change the public `otlpTracesEndpoint` to select an OTLP/HTTP JSON receiver. Never put authentication headers or tokens in browser configuration. A server-side Relay or Collector is needed for secret upstream credentials; static hosting cannot run Relay. Analysis reads local SQLite or imported OTLP JSONL without a cloud account. Delivery is best effort and missing observations do not prove abandonment.
+The SDK requires opt-in consent before initializing telemetry. Navigation is automatic; meaningful steps require the application API. Change the public `otlpTracesEndpoint` to select an OTLP/HTTP JSON receiver. Never put authentication headers or tokens in browser configuration. A server-side Relay or Collector is needed for secret upstream credentials; static hosting cannot run Relay. Analysis reads local SQLite or imported OTLP JSONL without a cloud account. Delivery is best effort and missing observations do not prove abandonment.
 
-The independent Vite example, local deployment configuration, and complete install/build/uninstall walkthrough will be added with their implementations. See [architecture](docs/architecture.md) and the [operator privacy template](docs/privacy.md).
+Run `pnpm demo` after building to create a temporary independent Vite app, install the actual packed SDK through the real CLI, start a loopback Relay and open-ready dev server at http://127.0.0.1:5173/field/. No account, publication or deployment is needed. Allow measurement to observe the two three-step tasks. Input notes stay in page memory. Ctrl-C removes the synthetic demo and database. The command prints paths for local inspection; see the [sample walkthrough](examples/vite-basic/README.md).
+
+While the demo is running, use the printed CLI, app and DB paths:
+
+```sh
+cd <printed-app-directory>
+node <printed-cli-path> doctor --origin http://127.0.0.1:5173
+node <printed-cli-path> report --db <printed-db-path> --journey first-task --days 7
+node <printed-cli-path> uninstall
+npm run build
+```
+
+For a persistent receiver, use the [local Compose setup](docs/deploy.md). To switch browser receivers, set the public otlpTracesEndpoint (or review init's explicit endpoint-change diff/approval), rebuild, and configure the receiver's CORS/CSP. Keep upstream credentials only in Relay/Collector server settings. The [installation guide](docs/install.md) explains generated-file ownership and edited-file repair. See [architecture](docs/architecture.md) and the [operator privacy template](docs/privacy.md).
 
 ## Project policies
 

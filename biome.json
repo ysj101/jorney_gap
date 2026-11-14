@@ -7,9 +7,16 @@
       "!pnpm-lock.yaml",
       "!docs/spec.md",
       "!packages/core/schema",
-      "!packages/core/src/generated"
+      "!packages/core/src/generated",
+      "!**/test-results",
+      "!**/playwright-report"
     ]
   },
-  "formatter": { "indentStyle": "space", "indentWidth": 2 },
-  "linter": { "enabled": true }
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "linter": {
+    "enabled": true
+  }
 }
