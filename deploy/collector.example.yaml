@@ -10,6 +10,7 @@ receivers:
           allowed_origins:
             - http://localhost:5173
             - http://localhost:4173
+            - http://127.0.0.1:4173
 processors:
   memory_limiter:
     check_interval: 1s

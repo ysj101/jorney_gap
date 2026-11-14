@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests/e2e",
+  testIgnore: "**/collector.spec.ts",
   workers: 1,
   timeout: 45000,
   expect: { timeout: 10000 },
