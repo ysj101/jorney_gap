@@ -1,2 +1,9 @@
-// Public APIs are introduced by the corresponding implementation issues.
-export {};
+export type {
+  JourneyDefinition,
+  JourneyGapClient,
+  JourneyGapConfig,
+  JourneyStep,
+  Scalar,
+  TrackAttributes,
+} from "@journeygap/core";
+export { getJourneyGapClient, initJourneyGap, trackStep } from "./client.js";

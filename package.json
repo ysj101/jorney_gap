@@ -21,7 +21,9 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
     "@opentelemetry/api": "1.9.0",
+    "@types/jsdom": "21.1.7",
     "@types/node": "24.10.1",
+    "jsdom": "27.0.1",
     "typescript": "5.9.3",
     "vitest": "5.1.0"
   }
