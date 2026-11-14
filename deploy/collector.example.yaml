@@ -20,7 +20,7 @@ processors:
     send_batch_size: 20
 exporters:
   file:
-    path: /tmp/journeygap-traces.jsonl
+    path: /data/journeygap-traces.jsonl
     rotation:
       max_megabytes: 10
       max_backups: 1

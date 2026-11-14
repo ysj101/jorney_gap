@@ -53,10 +53,10 @@ docker compose --profile observability up -d --build --wait
 curl --fail http://127.0.0.1:13133/
 ```
 
-Direct browser export to Collector uses `http://localhost:14318/v1/traces`. Its CORS allowlist matches the local sample, with a memory limiter and bounded file rotation. The file exporter writes newline-delimited OTLP JSON inside its ephemeral /tmp filesystem. Copy synthetic test data before removing the Collector container:
+Direct browser export to Collector uses `http://localhost:14318/v1/traces`. Its CORS allowlist matches the local sample, with a memory limiter and bounded file rotation. The file exporter writes newline-delimited OTLP JSON in the collector-data volume. A one-shot initialization container sets that volume's ownership; the Collector itself runs as UID 10001. Copy synthetic test data with:
 
 ```sh
-docker compose cp collector:/tmp/journeygap-traces.jsonl ./data/traces.jsonl
+docker compose cp collector:/data/journeygap-traces.jsonl ./data/traces.jsonl
 ```
 
 Do not commit exported telemetry or data volumes. Change the fixed upstream endpoint to use another compatible receiver; local analysis continues to use Relay SQLite. The optional Collector is not an authenticated public endpoint; keep it on loopback or add a protected ingress. CI builds and starts both containers; full SDK/Collector round-trip acceptance is covered by the separate compatibility tests.

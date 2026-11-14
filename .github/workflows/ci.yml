@@ -25,11 +25,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JOURNEYGAP_ADMIN_TOKEN: synthetic-ci-admin-token-not-a-real-secret
+      JOURNEYGAP_UPSTREAM_OTLP_TRACES_ENDPOINT: http://collector:14318/v1/traces
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
       - run: docker compose -p journeygap-ci config --quiet
       - run: docker compose -p journeygap-ci --profile observability up -d --build --wait --wait-timeout 180
       - run: curl --fail http://127.0.0.1:4318/healthz && curl --fail http://127.0.0.1:13133/
+      - run: node scripts/container-smoke.mjs journeygap-ci
       - if: failure()
         run: docker compose -p journeygap-ci --profile observability logs
       - if: always()
