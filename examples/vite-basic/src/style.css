@@ -1,0 +1,221 @@
+:root {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  color: #17383e;
+  background: #e9f0f0;
+  font-synthesis: none;
+  line-height: 1.7;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header,
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem max(5vw, 1.2rem);
+}
+header {
+  background: #17383e;
+  color: #fff;
+}
+.station {
+  font-weight: 700;
+  line-height: 1.4;
+  text-decoration: none;
+  color: inherit;
+}
+header > span {
+  font-size: 0.85rem;
+}
+main {
+  max-width: 1100px;
+  margin: auto;
+  padding: 3rem 2rem;
+}
+.intro {
+  position: relative;
+  padding: 0 0 2.5rem 1rem;
+  border-left: 6px solid #257c85;
+}
+.intro > p:first-child {
+  margin: 0;
+  color: #257c85;
+  font-weight: 700;
+}
+h1 {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-weight: 600;
+  font-size: clamp(2.2rem, 6vw, 4rem);
+  line-height: 1.4;
+  margin: 0.75rem 0 1rem;
+}
+h2 {
+  font-size: 1.25rem;
+  margin: 0.7rem 0;
+}
+.workbench {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+.workbench > section {
+  background: #fff;
+  padding: 1.5rem 2rem;
+  border-top: 5px solid #257c85;
+  box-shadow: 0 6px 0 #c5d8da;
+}
+.illustration {
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: #dfedef;
+  color: #17383e;
+}
+.equipment span {
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 80px;
+  border: 3px solid #257c85;
+  border-radius: 28px 28px 8px 8px;
+  font-size: 0.8rem;
+}
+.equipment span:nth-child(2) {
+  height: 65px;
+  border-radius: 2px;
+  transform: rotate(-8deg);
+  background: #fff;
+}
+.tide {
+  flex-direction: column;
+  gap: 0.25rem;
+  background: repeating-linear-gradient(
+    0deg,
+    #dfedef 0,
+    #dfedef 16px,
+    #c5d8da 17px,
+    #dfedef 18px
+  );
+}
+.tide span {
+  background: #dfedef;
+  padding: 0.1rem 0.7rem;
+}
+ol {
+  padding-left: 1.5rem;
+}
+li {
+  padding: 0.25rem 0;
+  color: #53696e;
+}
+li.done {
+  color: #17383e;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: #9a6b1d;
+  text-underline-offset: 5px;
+}
+button {
+  font: inherit;
+  font-weight: 700;
+  background: #257c85;
+  color: #fff;
+  border: 2px solid #257c85;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+}
+button:hover {
+  background: #17383e;
+  border-color: #17383e;
+}
+button:focus-visible,
+a:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #9a6b1d;
+  outline-offset: 4px;
+}
+[role="status"] {
+  font-size: 0.85rem;
+  min-height: 1.6em;
+}
+.notebook {
+  margin-top: 3rem;
+  padding: 1.5rem 0;
+  border-top: 2px solid #c5d8da;
+}
+.notebook label {
+  display: block;
+}
+.notebook textarea {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  font: inherit;
+  padding: 0.75rem;
+  margin: 0.6rem 0 1rem;
+  border: 1px solid #53696e;
+  background: #fff;
+}
+.notebook button {
+  background: transparent;
+  color: #17383e;
+  border-color: #53696e;
+}
+footer {
+  font-size: 0.8rem;
+  border-top: 1px solid #c5d8da;
+}
+a {
+  color: inherit;
+}
+.journeygap-consent {
+  max-width: 1060px;
+  margin: 0 auto 2rem;
+  padding: 1.25rem 2rem;
+  background: #fff;
+  border: 2px solid #53696e;
+}
+.journeygap-consent button {
+  margin: 0 0.8rem 0.4rem 0;
+  min-width: 90px;
+}
+.journeygap-consent p {
+  max-width: 70ch;
+}
+@media (max-width: 650px) {
+  main {
+    padding: 2rem 1.2rem;
+  }
+  .workbench {
+    grid-template-columns: 1fr;
+  }
+  .workbench > section {
+    padding: 1.3rem;
+  }
+  header,
+  footer {
+    align-items: flex-start;
+  }
+  header > span {
+    max-width: 8em;
+  }
+  footer {
+    flex-direction: column;
+  }
+  .journeygap-consent {
+    margin: 0 1.2rem 1.5rem;
+    padding: 1rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto;
+  }
+}
