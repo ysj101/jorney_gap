@@ -9,7 +9,12 @@ afterEach(async () => {
   await Promise.all(relays.splice(0).map((relay) => relay.close()));
 });
 async function start(config: unknown = relayConfig, now = Date.now) {
-  const relay = createRelay({ config, databasePath: ":memory:", now });
+  const relay = createRelay({
+    config,
+    databasePath: ":memory:",
+    now,
+    adminToken: "synthetic-test-admin-token-not-a-real-secret",
+  });
   relays.push(relay);
   return { relay, url: await relay.listen(0) };
 }
@@ -121,7 +126,7 @@ it("rejects unsupported types, malformed JSON and invalid JourneyGap data withou
   expect(invalid.status).toBe(400);
   expect(await invalid.text()).not.toContain("dummy-secret");
   expect(relay.store.count()).toBe(0);
-  expect((await fetch(`${url}/admin/v1/report`)).status).toBe(404);
+  expect((await fetch(`${url}/admin/v1/report`)).status).toBe(401);
   expect((await fetch(`${url}/v1/traces`)).status).toBe(405);
   expect((await fetch(`${url}/healthz`)).status).toBe(200);
 });
@@ -211,6 +216,7 @@ it("validates startup configuration and releases resources when closed twice", a
     createRelay({
       config: { ...relayConfig, allowedOrigins: ["*"] },
       databasePath: ":memory:",
+      adminToken: "synthetic-test-admin-token-not-a-real-secret",
     }),
   ).toThrow("Invalid Relay configuration");
   const { relay } = await start();

@@ -30,7 +30,11 @@ try {
     )
       throw new Error("Invalid options");
     const config: unknown = JSON.parse(readFileSync(values.config, "utf8"));
-    const relay = createRelay({ config, databasePath: values.db });
+    const relay = createRelay({
+      config,
+      databasePath: values.db,
+      adminToken: process.env.JOURNEYGAP_ADMIN_TOKEN ?? "",
+    });
     try {
       console.log(
         `JourneyGap Relay listening at ${await relay.listen(port, values.host)}`,
