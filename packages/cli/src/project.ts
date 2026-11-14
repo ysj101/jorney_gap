@@ -299,6 +299,10 @@ export function verifyManaged(
         `Missing managed file ${name}; inspect and repair manually`,
       );
     }
+    if (statSync(path).size > 1048576)
+      throw new CliError(
+        `Edited or oversized managed file ${name}; preserve it and inspect manually. No changes made`,
+      );
     const actual = hash(readFileSync(path));
     if (actual !== expected)
       throw new CliError(

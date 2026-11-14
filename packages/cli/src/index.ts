@@ -3,6 +3,7 @@ import { CliError, loadConfiguration, localPath } from "./config.js";
 import { importOtlp } from "./import.js";
 import { initProject } from "./init.js";
 import { formatReport, report } from "./report.js";
+import { uninstallProject } from "./uninstall.js";
 
 export type CliIo = {
   out: (text: string) => void;
@@ -20,7 +21,16 @@ export async function run(
     const command = args[0];
     if (!command || command === "--help" || command === "help") {
       io.out(
-        "journeygap init [--endpoint https://receiver.example/v1/traces] [--approve-config-change HASH]\njourneygap import --input traces.jsonl --db journeygap.db [--config file]\njourneygap report --db journeygap.db --journey ID [--service ID] [--days 7 | --from ISO] [--to ISO] [--grace-minutes 0] [--format text|json] [--config file]",
+        "journeygap init [--endpoint https://receiver.example/v1/traces] [--approve-config-change HASH]\njourneygap uninstall\njourneygap import --input traces.jsonl --db journeygap.db [--config file]\njourneygap report --db journeygap.db --journey ID [--service ID] [--days 7 | --from ISO] [--to ISO] [--grace-minutes 0] [--format text|json] [--config file]",
+      );
+      return 0;
+    }
+    if (command === "uninstall") {
+      if (args.length !== 1)
+        throw new CliError("uninstall accepts no overwrite/force flags");
+      const result = await uninstallProject(cwd);
+      io.out(
+        `JourneyGap ${result.status}; SDK dependency ${result.dependency}. Only owned integration files/imports were removed; inspect git diff --stat.`,
       );
       return 0;
     }

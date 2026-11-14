@@ -13,6 +13,7 @@ import { promisify } from "node:util";
 import { expect, it } from "vitest";
 import { initProject } from "../packages/cli/src/init.js";
 import { readInstall } from "../packages/cli/src/project.js";
+import { uninstallProject } from "../packages/cli/src/uninstall.js";
 import { packageRegistry } from "./fixtures/registry.js";
 
 it.each(["npm", "pnpm"] as const)(
@@ -88,6 +89,32 @@ it.each(["npm", "pnpm"] as const)(
           })
         ).status,
       ).toBe("unchanged");
+      const pkgPath = join(app, "package.json");
+      await execute(
+        manager,
+        manager === "npm"
+          ? [
+              "install",
+              "is-number@7.0.0",
+              "--ignore-scripts",
+              "--no-audit",
+              "--no-fund",
+            ]
+          : ["add", "is-number@7.0.0", "--ignore-scripts"],
+        { cwd: app, timeout: 60000, maxBuffer: 1048576 },
+      );
+      expect((await uninstallProject(app)).dependency).toBe("removed");
+      expect((await uninstallProject(app)).status).toBe("unchanged");
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+      expect(pkg.dependencies["is-number"]).toBeTruthy();
+      expect(pkg.dependencies["@journeygap/web"]).toBeUndefined();
+      await execute(
+        manager,
+        manager === "npm"
+          ? ["exec", "--", "vite", "build"]
+          : ["exec", "vite", "build"],
+        { cwd: app, timeout: 60000, maxBuffer: 1048576 },
+      );
     } finally {
       await registry.close();
       rmSync(root, { recursive: true, force: true });
