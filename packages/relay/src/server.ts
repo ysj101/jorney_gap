@@ -95,6 +95,12 @@ export function createRelay(options: RelayOptions) {
       : { maxDatabaseBytes: config.maxDatabaseBytes }),
     now,
   });
+  try {
+    store.setConfig(config);
+  } catch (error) {
+    store.close();
+    throw error;
+  }
   // Fixed-size, temporary IP buckets. No forwarded header is trusted or persisted.
   const buckets = new Map<string, { count: number; expires: number }>();
   const admin = createAdmin({ token: options.adminToken, config, store, now });

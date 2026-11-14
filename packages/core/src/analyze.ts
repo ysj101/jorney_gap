@@ -110,6 +110,7 @@ export function analyze(
   let excludedEvents = 0;
   let duplicateEvents = 0;
   let clockSkewEvents = 0;
+  let unknownReceiptEvents = 0;
   const selected: JourneyEvent[] = [];
   for (const event of events) {
     if (event.journeyId !== definition.id) continue;
@@ -142,6 +143,7 @@ export function analyze(
       continue;
     }
     seen.add(eventKey);
+    if (event.receivedAtMs === undefined) unknownReceiptEvents++;
     selected.push(event);
   }
   selected.sort((a, b) => a.timestampMs - b.timestampMs);
@@ -245,11 +247,17 @@ export function analyze(
     observationEndMs: observationEnd,
     excludedEvents,
     clockSkewEvents,
+    unknownReceiptEvents,
     pendingAttempts,
   };
   const findings: Finding[] = [];
   const confidence =
-    pendingAttempts || excludedEvents || outOfOrderEvents ? "low" : "medium";
+    pendingAttempts ||
+    excludedEvents ||
+    outOfOrderEvents ||
+    unknownReceiptEvents
+      ? "low"
+      : "medium";
   if (observedStarts < 20 || pendingAttempts || excludedEvents)
     findings.push({
       kind: "insufficient_data",
@@ -315,6 +323,10 @@ export function analyze(
   if (clockSkewEvents)
     warnings.push(
       "受信時刻とのずれが24時間を超えたイベントを集計から除外しました。",
+    );
+  if (unknownReceiptEvents)
+    warnings.push(
+      "元の受信時刻が不明な観測があり、時計ずれを検証できません。オフライン取込時刻は元の受信時刻ではありません。",
     );
   return {
     journeyId: definition.id,

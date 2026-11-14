@@ -38,7 +38,7 @@ it("migrates a file to WAL storage and preserves records across reopen", () => {
   const reopened = open(path);
   expect(reopened.list("sample-web", "first-task")).toEqual([input]);
   const inspect = new DatabaseSync(path);
-  expect(inspect.prepare("PRAGMA user_version").get()?.user_version).toBe(1);
+  expect(inspect.prepare("PRAGMA user_version").get()?.user_version).toBe(2);
   expect(inspect.prepare("PRAGMA journal_mode").get()?.journal_mode).toBe(
     "wal",
   );
@@ -144,7 +144,7 @@ it("rejects future database versions without silently recreating tables", () => 
   const path = databasePath();
   const future = new DatabaseSync(path);
   future.exec(
-    "PRAGMA user_version=2; CREATE TABLE sentinel (value TEXT); INSERT INTO sentinel VALUES ('preserved');",
+    "PRAGMA user_version=3; CREATE TABLE sentinel (value TEXT); INSERT INTO sentinel VALUES ('preserved');",
   );
   future.close();
   expect(() => open(path)).toThrow("Unsupported database schema version");

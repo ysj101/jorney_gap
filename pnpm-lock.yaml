@@ -30,7 +30,14 @@ importers:
         specifier: 5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.0)(@types/node@24.10.1)(jsdom@27.0.1)(vite@8.3.8(@types/node@24.10.1))
 
-  packages/cli: {}
+  packages/cli:
+    dependencies:
+      '@journeygap/core':
+        specifier: workspace:*
+        version: link:../core
+      '@journeygap/relay':
+        specifier: workspace:*
+        version: link:../relay
 
   packages/core:
     dependencies:

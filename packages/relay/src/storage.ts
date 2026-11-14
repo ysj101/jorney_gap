@@ -1,8 +1,8 @@
 import { chmodSync, mkdirSync, statSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { StoredJourneyEvent } from "@journeygap/core";
-import { safeVersion } from "@journeygap/core";
+import type { RelayConfig, StoredJourneyEvent } from "@journeygap/core";
+import { safeVersion, validateRelayConfig } from "@journeygap/core";
 
 const DAY = 86400000;
 const id = /^[a-z][a-z0-9._-]{0,63}$/;
@@ -26,6 +26,11 @@ CREATE INDEX idx_journey_instance ON journey_events(instance_id, timestamp_ms);
 CREATE INDEX idx_journey_retention ON journey_events(received_at_ms);
 PRAGMA user_version = 1;
 `;
+const migration2 = `
+ALTER TABLE journey_events ADD COLUMN source TEXT NOT NULL DEFAULT 'live' CHECK (source IN ('live','offline'));
+CREATE TABLE relay_metadata (id INTEGER PRIMARY KEY CHECK (id = 1), config_json TEXT NOT NULL);
+PRAGMA user_version = 2;
+`;
 
 export type StorageOptions = {
   retentionDays?: number;
@@ -33,6 +38,7 @@ export type StorageOptions = {
   maxDatabaseBytes?: number;
   cleanupIntervalMs?: number;
   now?: () => number;
+  readOnly?: boolean;
 };
 export class StorageQuotaError extends Error {
   constructor() {
@@ -49,6 +55,7 @@ export class EventStore {
   private maxEvents: number;
   private maxDatabaseBytes: number;
   private now: () => number;
+  private readOnly: boolean;
 
   constructor(
     private path: string,
@@ -59,6 +66,7 @@ export class EventStore {
     this.maxDatabaseBytes = options.maxDatabaseBytes ?? 100 * 1024 * 1024;
     const interval = options.cleanupIntervalMs ?? 3600000;
     this.now = options.now ?? Date.now;
+    this.readOnly = options.readOnly ?? false;
     if (
       !Number.isInteger(this.retentionDays) ||
       this.retentionDays < 1 ||
@@ -71,10 +79,15 @@ export class EventStore {
       interval < 100
     )
       throw new Error("Invalid storage options");
-    if (path !== ":memory:")
+    if (path !== ":memory:" && !this.readOnly)
       mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-    this.db = new DatabaseSync(path);
+    this.db = new DatabaseSync(path, { readOnly: this.readOnly });
     try {
+      if (this.readOnly) {
+        if (this.db.prepare("PRAGMA user_version").get()?.user_version !== 2)
+          throw new Error("Database requires migration by Relay or import");
+        return;
+      }
       if (path !== ":memory:") chmodSync(path, 0o600);
       this.db.exec(
         "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000; PRAGMA secure_delete=ON; PRAGMA cache_spill=OFF;",
@@ -82,12 +95,13 @@ export class EventStore {
       const version = this.db
         .prepare("PRAGMA user_version")
         .get()?.user_version;
-      if (version !== 0 && version !== 1)
+      if (version !== 0 && version !== 1 && version !== 2)
         throw new Error("Unsupported database schema version");
-      if (version === 0) {
+      if (version === 0 || version === 1) {
         this.db.exec("BEGIN IMMEDIATE");
         try {
-          this.db.exec(migration1);
+          if (version === 0) this.db.exec(migration1);
+          this.db.exec(migration2);
           this.db.exec("COMMIT");
         } catch (error) {
           this.db.exec("ROLLBACK");
@@ -141,14 +155,20 @@ export class EventStore {
     );
   }
 
-  insert(events: readonly StoredJourneyEvent[]): {
+  insert(
+    events: readonly StoredJourneyEvent[],
+    source: "live" | "offline" = "live",
+  ): {
     inserted: number;
     duplicates: number;
   } {
     if (this.closed) throw new Error("Storage is closed");
+    if (this.readOnly) throw new Error("Storage is read-only");
+    if (source !== "live" && source !== "offline")
+      throw new Error("Invalid event source");
     if (events.length > 1000) throw new Error("Too many events");
     const insert = this.db.prepare(
-      "INSERT OR IGNORE INTO journey_events (event_id, service_name, app_version, schema_version, timestamp_ms, received_at_ms, session_id, instance_id, journey_id, step_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT OR IGNORE INTO journey_events (event_id, service_name, app_version, schema_version, timestamp_ms, received_at_ms, session_id, instance_id, journey_id, step_id, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     this.db.exec("BEGIN IMMEDIATE");
     let inserted = 0;
@@ -183,6 +203,7 @@ export class EventStore {
           event.instanceId.toLowerCase(),
           event.journeyId,
           event.stepId,
+          source,
         );
         inserted += Number(result.changes);
         if (
@@ -231,20 +252,22 @@ export class EventStore {
       throw new Error("Invalid storage query");
     return this.db
       .prepare(
-        "SELECT event_id AS eventId, service_name AS serviceName, app_version AS appVersion, schema_version AS schemaVersion, timestamp_ms AS timestampMs, received_at_ms AS receivedAtMs, session_id AS sessionId, instance_id AS instanceId, journey_id AS journeyId, step_id AS stepId FROM journey_events WHERE service_name = ? AND journey_id = ? AND timestamp_ms >= ? AND timestamp_ms <= ? ORDER BY timestamp_ms, received_at_ms, rowid",
+        "SELECT event_id AS eventId, service_name AS serviceName, app_version AS appVersion, schema_version AS schemaVersion, timestamp_ms AS timestampMs, received_at_ms AS receivedAtMs, session_id AS sessionId, instance_id AS instanceId, journey_id AS journeyId, step_id AS stepId, source FROM journey_events WHERE service_name = ? AND journey_id = ? AND timestamp_ms >= ? AND timestamp_ms <= ? ORDER BY timestamp_ms, received_at_ms, rowid",
       )
       .all(serviceName, journeyId, fromMs, toMs)
       .map((row) => {
-        const { appVersion, ...rest } = row;
+        const { appVersion, source, receivedAtMs, ...rest } = row;
         return {
           ...rest,
           ...(appVersion === null ? {} : { appVersion }),
+          ...(source === "offline" ? {} : { receivedAtMs }),
         } as StoredJourneyEvent;
       });
   }
 
   cleanup(): number {
     if (this.closed) return 0;
+    if (this.readOnly) throw new Error("Storage is read-only");
     const now = this.now();
     if (!Number.isSafeInteger(now) || now < 0)
       throw new Error("Invalid storage clock");
@@ -260,7 +283,38 @@ export class EventStore {
     if (this.closed) return;
     this.closed = true;
     clearInterval(this.timer);
-    this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    if (!this.readOnly) this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     this.db.close();
+  }
+
+  setConfig(input: RelayConfig): void {
+    if (this.readOnly) throw new Error("Storage is read-only");
+    const result = validateRelayConfig(input);
+    if (!result.valid) throw new Error("Invalid stored configuration");
+    this.db
+      .prepare(
+        "INSERT INTO relay_metadata (id, config_json) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET config_json=excluded.config_json",
+      )
+      .run(JSON.stringify(result.value));
+  }
+
+  getConfig(): RelayConfig | null {
+    const json = this.db
+      .prepare(
+        "SELECT substr(config_json, 1, 262145) AS config FROM relay_metadata WHERE id=1",
+      )
+      .get()?.config;
+    if (json === undefined) return null;
+    if (typeof json !== "string" || json.length > 262144)
+      throw new Error("Invalid stored configuration");
+    let input: unknown;
+    try {
+      input = JSON.parse(json);
+    } catch {
+      throw new Error("Invalid stored configuration");
+    }
+    const result = validateRelayConfig(input);
+    if (!result.valid) throw new Error("Invalid stored configuration");
+    return result.value;
   }
 }
