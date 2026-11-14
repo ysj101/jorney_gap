@@ -17,8 +17,10 @@ import { createRelay } from "../../packages/relay/src/index.js";
 import { packageRegistry } from "../fixtures/registry.js";
 
 const execute = promisify(execFile);
-export async function listen(server: Server): Promise<string> {
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+export async function listen(server: Server, port = 0): Promise<string> {
+  await new Promise<void>((resolve) =>
+    server.listen(port, "127.0.0.1", resolve),
+  );
   const address = server.address();
   if (!address || typeof address === "string")
     throw new Error("Missing address");
@@ -78,6 +80,7 @@ async function laboratory() {
       "cli",
     ]);
     cleanups.push(() => registry.close());
+    const collector = process.env.JOURNEYGAP_COLLECTOR_ENDPOINT;
     const payloads: string[] = [];
     let active = "on";
     let received = 0;
@@ -94,7 +97,7 @@ async function laboratory() {
         file = join(root, active, "index.html");
       res.setHeader(
         "content-security-policy",
-        `default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' ${relayOrigin} ${deniedOrigin}; base-uri 'self'; object-src 'none'`,
+        `default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' ${relayOrigin} ${deniedOrigin} ${collector ? new URL(collector).origin : ""}; base-uri 'self'; object-src 'none'`,
       );
       res.setHeader(
         "Content-Type",
@@ -115,7 +118,7 @@ async function laboratory() {
     cleanups.push(() => close(staticServer));
     let relayOrigin = "";
     let deniedOrigin = "";
-    const origin = await listen(staticServer);
+    const origin = await listen(staticServer, collector ? 4173 : 0);
     const journeys = ["first-task", "second-task"].map((id) => ({
       id,
       steps: [
@@ -133,6 +136,9 @@ async function laboratory() {
         retentionDays: 14,
         rateLimitPerMinute: 600,
       },
+      ...(collector
+        ? { upstream: { endpoint: collector, development: true } }
+        : {}),
       databasePath: join(root, "relay.db"),
       adminToken: "synthetic-browser-admin-token-not-a-real-secret",
     });
@@ -184,11 +190,17 @@ async function laboratory() {
     await invoke(["init", "--endpoint", `${relayOrigin}/v1/traces`]);
     const configPath = join(app, "journeygap.config.json");
     const original = readFileSync(configPath, "utf8");
-    for (const mode of ["on", "off", "denied"]) {
+    for (const mode of [
+      "on",
+      "off",
+      "denied",
+      ...(collector ? ["collector"] : []),
+    ]) {
       const config = JSON.parse(original);
       if (mode === "off") config.enabled = false;
       if (mode === "denied")
         config.otlpTracesEndpoint = `${deniedOrigin}/v1/traces`;
+      if (mode === "collector") config.otlpTracesEndpoint = collector;
       writeFileSync(configPath, JSON.stringify(config));
       await command(["run", "build"]);
       cpSync(join(app, "dist"), join(root, mode), { recursive: true });

@@ -37,6 +37,14 @@ jobs:
       - run: docker compose -p journeygap-ci --profile observability up -d --build --wait --wait-timeout 180
       - run: curl --fail http://127.0.0.1:4318/healthz && curl --fail http://127.0.0.1:13133/
       - run: node scripts/container-smoke.mjs journeygap-ci
+      - run: npm install --global pnpm@10.30.2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:collector
+        env:
+          JOURNEYGAP_COLLECTOR_ENDPOINT: http://127.0.0.1:14318/v1/traces
+          JOURNEYGAP_COMPOSE_PROJECT: journeygap-ci
       - if: failure()
         run: docker compose -p journeygap-ci --profile observability logs
       - if: always()

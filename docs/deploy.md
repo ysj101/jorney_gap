@@ -63,3 +63,19 @@ docker compose cp collector:/data/journeygap-traces.jsonl ./data/traces.jsonl
 Do not commit exported telemetry or data volumes. Change the fixed upstream endpoint to use another compatible receiver; local analysis continues to use Relay SQLite. The optional Collector is not an authenticated public endpoint; keep it on loopback or add a protected ingress. CI builds and starts both containers; full SDK/Collector round-trip acceptance is covered by the separate compatibility tests.
 
 See [storage](storage.md) for retention and disk budget details and [privacy](privacy.md) for the operator notice. Health does not disclose configuration. Unknown paths return 404. A static host can serve the browser application but cannot run this Node service.
+
+## Browser-to-Collector acceptance
+
+The optional local Collector accepts the independent browser sample from the exact development origin http://127.0.0.1:4173 as well as the documented localhost sample origins. These are loopback examples; replace them with explicit deployed origins behind TLS for production.
+
+After installing/building the repository, start only the disposable Collector and its volume initializer:
+
+```sh
+JOURNEYGAP_ADMIN_TOKEN=synthetic-local-acceptance-admin-token docker compose -p journeygap-acceptance --profile observability up -d --wait collector
+JOURNEYGAP_COLLECTOR_ENDPOINT=http://127.0.0.1:14318/v1/traces JOURNEYGAP_COMPOSE_PROJECT=journeygap-acceptance pnpm test:collector
+JOURNEYGAP_ADMIN_TOKEN=synthetic-local-acceptance-admin-token docker compose -p journeygap-acceptance --profile observability down --volumes
+```
+
+Use a separate project and free ports 4173/14318/13133. The placeholder admin value only satisfies Compose configuration interpolation; this command starts no Compose Relay and configures no external account. The browser setup starts its own local Relay and an independent npm/Vite app. It sends more than 20 real browser trials through the official OpenTelemetry HTTP exporter, both via Relay forwarding and directly to the standard Collector. The Collector file exporter output is copied with docker compose cp, imported by the real CLI, and compared with event IDs, observed counts and exact median timings. A replacement plain OTLP/HTTP receiver confirms that changing upstream leaves the Relay report unchanged. CI runs this acceptance alongside container health/forwarding checks, with synthetic data only.
+
+This proves transport compatibility and local-file analysis. It does not claim a common query/export API for every telemetry backend. To analyze data retained by another backend, obtain OTLP JSONL through that backend's supported export mechanism or retain it through Relay/Collector before ingestion.

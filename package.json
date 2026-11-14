@@ -18,7 +18,8 @@
     "validators:check": "node packages/core/scripts/validators.mjs",
     "validators:generate": "node packages/core/scripts/validators.mjs --write",
     "test:e2e": "playwright install chromium && playwright test",
-    "demo": "node scripts/demo.mjs"
+    "demo": "node scripts/demo.mjs",
+    "test:collector": "playwright install chromium && playwright test --config playwright.collector.config.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
