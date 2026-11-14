@@ -1,0 +1,62 @@
+services:
+  relay:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: development
+      JOURNEYGAP_ADMIN_TOKEN: ${JOURNEYGAP_ADMIN_TOKEN:?Set a random server-only admin token}
+      JOURNEYGAP_UPSTREAM_OTLP_TRACES_ENDPOINT: ${JOURNEYGAP_UPSTREAM_OTLP_TRACES_ENDPOINT:-}
+      JOURNEYGAP_UPSTREAM_AUTH_HEADER: ${JOURNEYGAP_UPSTREAM_AUTH_HEADER:-}
+    ports:
+      - "127.0.0.1:4318:4318"
+    volumes:
+      - ./journeygap.relay.example.json:/config/journeygap.relay.json:ro
+      - relay-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    pids_limit: 128
+  collector-data-init:
+    image: node:24.19.0-alpine@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43
+    profiles: [observability]
+    user: "0:0"
+    command:
+      [
+        "node",
+        "-e",
+        "const fs=require('node:fs');fs.chownSync('/data',0,0);fs.chmodSync('/data',0o700);fs.chownSync('/data',10001,10001)",
+      ]
+    volumes:
+      - collector-data:/data
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    security_opt: [no-new-privileges:true]
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.139.0@sha256:faf125d656fa47cea568b2f3b4494efd2525083bc75c1e96038bc23f05cd68fd
+    profiles: [observability]
+    user: "10001:10001"
+    depends_on:
+      collector-data-init:
+        condition: service_completed_successfully
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./collector.example.yaml:/etc/otelcol/config.yaml:ro
+      - collector-data:/data
+    ports:
+      - "127.0.0.1:14318:14318"
+      - "127.0.0.1:13133:13133"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    pids_limit: 128
+volumes:
+  relay-data:
+  collector-data:
