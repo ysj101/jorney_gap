@@ -22,5 +22,8 @@
   },
   "dependencies": {
     "@journeygap/core": "workspace:*"
+  },
+  "bin": {
+    "journeygap-relay": "./dist/main.js"
   }
 }
