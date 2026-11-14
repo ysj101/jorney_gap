@@ -33,7 +33,7 @@ Identical init reruns leave imports, dependencies and files unchanged. Re-runnin
 
 Changing an unedited managed config's endpoint first prints a concrete old/new enabled/endpoint diff and an approval hash, then stops without writing. Review that diff and rerun with the same --endpoint and --approve-config-change HASH. The hash binds the exact current/proposed config, so a stale approval cannot silently authorize another diff. --force never bypasses this review or overwrites user edits. Custom edited configurations must be preserved and integrated manually; the CLI does not silently adopt them as disposable generated files.
 
-Use a public browser-safe OTLP URL. Put any upstream/admin secrets only in the server environment, as described in [deployment](deploy.md). For SDK consent and manual step calls see [Web integration](web.md). Automated uninstall and doctor are implemented in their separate tasks.
+Use a public browser-safe OTLP URL. Put any upstream/admin secrets only in the server environment, as described in [deployment](deploy.md). For SDK consent and manual step calls see [Web integration](web.md). Uninstall and doctor are documented below.
 
 ## Uninstall
 
