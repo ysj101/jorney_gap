@@ -1,0 +1,96 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing SemVer tag on a green main commit, for example v0.1.0
+        type: string
+        required: true
+      publish:
+        description: Request publication after reviewing prepared artifacts (separate authorization required)
+        type: boolean
+        default: false
+      names_and_rights_confirmed:
+        description: Scope ownership, name/trademark review, npm trusted publisher and publication authorization confirmed
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.validate.outputs.sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - id: validate
+        run: node scripts/release-check.mjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_PUBLISH: ${{ inputs.publish }}
+          RELEASE_RIGHTS_CONFIRMED: ${{ inputs.names_and_rights_confirmed }}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ steps.validate.outputs.sha }}
+          fetch-depth: 0
+      - run: npm install --global pnpm@10.30.2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm secrets:check
+      - run: pnpm audit
+      - run: pnpm build
+      - run: pnpm schema:check && pnpm validators:check && pnpm typecheck && pnpm lint && pnpm test
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - run: pnpm licenses:check && pnpm release:pack
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: npm-release-${{ github.run_id }}
+          path: artifacts/release/
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    if: inputs.publish && inputs.names_and_rights_confirmed
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: npm-release-${{ github.run_id }}
+          path: artifacts/release/
+      - run: node scripts/pack.mjs --verify
+      - run: npm install --global npm@11.6.2
+      - name: Publish reviewed artifacts using npm trusted publishing
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          for name in core web relay cli; do
+            npm publish "artifacts/release/journeygap-${name}-${version}.tgz" --provenance --access public --ignore-scripts
+          done

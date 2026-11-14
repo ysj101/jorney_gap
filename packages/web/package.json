@@ -26,5 +26,14 @@
     "@opentelemetry/exporter-trace-otlp-http": "0.222.0",
     "@opentelemetry/resources": "2.11.0",
     "@opentelemetry/sdk-trace": "2.11.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ysj101/jorney_gap.git",
+    "directory": "packages/web"
+  },
+  "homepage": "https://github.com/ysj101/jorney_gap#readme",
+  "bugs": {
+    "url": "https://github.com/ysj101/jorney_gap/issues"
   }
 }

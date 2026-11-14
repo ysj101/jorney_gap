@@ -26,5 +26,14 @@
   "dependencies": {
     "ajv": "8.20.0",
     "json-schema-to-ts": "3.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ysj101/jorney_gap.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/ysj101/jorney_gap#readme",
+  "bugs": {
+    "url": "https://github.com/ysj101/jorney_gap/issues"
   }
 }

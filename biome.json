@@ -9,7 +9,8 @@
       "!packages/core/schema",
       "!packages/core/src/generated",
       "!**/test-results",
-      "!**/playwright-report"
+      "!**/playwright-report",
+      "!artifacts"
     ]
   },
   "formatter": {

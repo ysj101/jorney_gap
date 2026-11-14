@@ -15,7 +15,10 @@ export function createForwarder(options: ForwardOptions) {
     process.env.NODE_ENV !== "production" &&
     endpoint.startsWith("http:") &&
     isSafeEndpoint(endpoint.replace(/^http:/, "https:"));
-  if (!isSafeEndpoint(endpoint) && !developmentHttp)
+  if (
+    (process.env.NODE_ENV === "production" && !endpoint.startsWith("https:")) ||
+    (!isSafeEndpoint(endpoint) && !developmentHttp)
+  )
     throw new Error("Invalid upstream endpoint");
   if (
     options.authorization !== undefined &&

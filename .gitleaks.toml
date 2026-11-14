@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+# Public localStorage key, not a credential. Only this exact identifier in the
+# consent module is exempt; test directories and token patterns remain scanned.
+[[allowlists]]
+description = "Public consent preference storage key"
+condition = "AND"
+paths = ['''^packages/web/src/consent\.ts$''']
+regexTarget = "secret"
+regexes = ['''^journeygap\.consent\.v1$''']

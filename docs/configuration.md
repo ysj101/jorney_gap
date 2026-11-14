@@ -4,7 +4,7 @@
 
 Public types (`JourneyGapConfig`, `JourneyDefinition`, `RelayConfig`) are inferred from the same schema source used to generate the packaged `schema/journeygap.schema.json` and `schema/relay.schema.json`. After modifying that source, run `pnpm build && pnpm schema:generate`. CI runs `pnpm schema:check` and fails if checked-in JSON is stale. JSON Schema can be imported using `@journeygap/core/schema/journeygap.schema.json` and the corresponding Relay path.
 
-Runtime validators are precompiled by AJV and checked into source, so importing and using core does not require `eval` or `new Function`. After changing schemas, also run `pnpm validators:generate && pnpm build`. CI checks generator output with `pnpm validators:check`. Node tests exercise the built package under `--disallow-code-generation-from-strings`; browser CSP behavior is also part of the later E2E acceptance tests.
+Runtime validators are precompiled by AJV and checked into source, so importing and using core does not require `eval` or `new Function`. After changing schemas, also run `pnpm validators:generate && pnpm build`. CI checks generator output with `pnpm validators:check`. Node tests exercise the built package under `--disallow-code-generation-from-strings`; built-browser CSP behavior is verified by the E2E acceptance tests.
 
 Use the validation functions for the complete contract: the portable JSON Schemas enforce shape, bounds, scalar types and ID syntax; additional semantic checks enforce unique IDs, an exclusively final terminal step, simple route segments, and safe endpoint/origin URLs. A generic JSON Schema validator alone does not enforce those cross-field constraints.
 

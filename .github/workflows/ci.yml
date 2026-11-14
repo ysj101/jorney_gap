@@ -8,6 +8,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -23,8 +24,27 @@ jobs:
       - run: pnpm test
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - run: npm install --global pnpm@10.30.2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm workflows:check
+      - run: pnpm secrets:check
+      - run: pnpm audit
+      - run: pnpm build
+      - run: pnpm licenses:check
+      - run: pnpm release:pack
   containers:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       JOURNEYGAP_ADMIN_TOKEN: synthetic-ci-admin-token-not-a-real-secret
       JOURNEYGAP_UPSTREAM_OTLP_TRACES_ENDPOINT: http://collector:14318/v1/traces

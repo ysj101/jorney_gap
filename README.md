@@ -4,7 +4,7 @@ JourneyGap observes application-defined journeys using OpenTelemetry traces and 
 
 ## Development status
 
-Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. Shared validation, privacy filtering, journey analysis, Relay, consent-gated Web client, CLI init/uninstall/doctor/import/report and browser acceptance tests are implemented. Collector acceptance and release-security gates are tracked in the [issue tracker](https://github.com/ysj101/jorney_gap/issues). The full contract is in [docs/spec.md](docs/spec.md).
+Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. Shared validation, privacy filtering, journey analysis, Relay, consent-gated Web client, CLI init/uninstall/doctor/import/report and browser acceptance tests are implemented. Standard Collector acceptance and security/release gates are also implemented. See [acceptance evidence](docs/acceptance.md) and [release procedure](docs/releases.md). The full contract is in [docs/spec.md](docs/spec.md).
 
 ## Build from source
 
@@ -21,9 +21,12 @@ pnpm lint
 pnpm test
 pnpm test:e2e
 pnpm audit
+pnpm licenses:check
+pnpm secrets:check
+pnpm workflows:check
 ```
 
-Build before tests: package smoke tests resolve the actual generated ESM exports and declarations. `packages/core` provides configuration validation, OTLP sanitization, and analysis; see [configuration](docs/configuration.md), [event schema](docs/event-schema.md), and [analysis](docs/analysis.md). `relay` provides [SQLite storage](docs/storage.md) and [local HTTP ingestion](docs/deploy.md). `web` provides the [consent-gated client](docs/web.md). `cli` provides [safe Vite integration](docs/install.md) and [offline import and reports](docs/offline.md). Generated artifacts are excluded from Git.
+Build before tests: package smoke tests resolve the actual generated ESM exports and declarations. `packages/core` provides configuration validation, OTLP sanitization, and analysis; see [configuration](docs/configuration.md), [event schema](docs/event-schema.md), and [analysis](docs/analysis.md). `relay` provides [SQLite storage](docs/storage.md) and [local HTTP ingestion](docs/deploy.md). `web` provides the [consent-gated client](docs/web.md). `cli` provides [safe Vite integration](docs/install.md) and [offline import and reports](docs/offline.md). Generated artifacts are excluded from Git. The optional Docker-based [Collector acceptance](docs/deploy.md#browser-to-collector-acceptance) additionally tests the real SDK directly and through Relay, then imports the Collector JSONL without vendor query APIs.
 
 ## Intended integration
 

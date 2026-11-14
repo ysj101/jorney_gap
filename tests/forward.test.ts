@@ -216,4 +216,12 @@ it("permits explicit development-only internal HTTP and refuses that exception i
       development: true,
     }),
   ).toThrow("Invalid upstream endpoint");
+  for (const host of ["localhost", "127.0.0.1", "[::1]"]) {
+    expect(() =>
+      createForwarder({
+        endpoint: `http://${host}:4318/v1/traces`,
+        development: true,
+      }),
+    ).toThrow("Invalid upstream endpoint");
+  }
 });
