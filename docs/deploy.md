@@ -56,6 +56,7 @@ curl --fail http://127.0.0.1:13133/
 Direct browser export to Collector uses `http://localhost:14318/v1/traces`. Its CORS allowlist matches the local sample, with a memory limiter and bounded file rotation. The file exporter writes newline-delimited OTLP JSON in the collector-data volume. A one-shot initialization container sets that volume's ownership; the Collector itself runs as UID 10001. Copy synthetic test data with:
 
 ```sh
+mkdir -p data
 docker compose cp collector:/data/journeygap-traces.jsonl ./data/traces.jsonl
 ```
 
