@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 import { CliError, loadConfiguration, localPath } from "./config.js";
+import { doctorProject } from "./doctor.js";
 import { importOtlp } from "./import.js";
 import { initProject } from "./init.js";
 import { formatReport, report } from "./report.js";
@@ -21,9 +22,29 @@ export async function run(
     const command = args[0];
     if (!command || command === "--help" || command === "help") {
       io.out(
-        "journeygap init [--endpoint https://receiver.example/v1/traces] [--approve-config-change HASH]\njourneygap uninstall\njourneygap import --input traces.jsonl --db journeygap.db [--config file]\njourneygap report --db journeygap.db --journey ID [--service ID] [--days 7 | --from ISO] [--to ISO] [--grace-minutes 0] [--format text|json] [--config file]",
+        "journeygap init [--endpoint https://receiver.example/v1/traces] [--approve-config-change HASH]\njourneygap doctor [--origin https://app.example]\njourneygap uninstall\njourneygap import --input traces.jsonl --db journeygap.db [--config file]\njourneygap report --db journeygap.db --journey ID [--service ID] [--days 7 | --from ISO] [--to ISO] [--grace-minutes 0] [--format text|json] [--config file]",
       );
       return 0;
+    }
+    if (command === "doctor") {
+      let origin: string | undefined;
+      try {
+        const { values } = parseArgs({
+          args: args.slice(1),
+          options: { origin: { type: "string" } },
+        });
+        origin = values.origin;
+      } catch {
+        throw new CliError("doctor accepts only --origin URL");
+      }
+      const result = await doctorProject(
+        cwd,
+        origin === undefined ? {} : { origin },
+      );
+      for (const check of result.checks)
+        io.out(`${check.status.toUpperCase()} ${check.check}: ${check.detail}`);
+      io.out(result.limitation);
+      return result.ok ? 0 : 1;
     }
     if (command === "uninstall") {
       if (args.length !== 1)
