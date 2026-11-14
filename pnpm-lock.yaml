@@ -38,6 +38,9 @@ importers:
       '@journeygap/relay':
         specifier: workspace:*
         version: link:../relay
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
 
   packages/core:
     dependencies:

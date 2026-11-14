@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "@journeygap/core": "workspace:*",
-    "@journeygap/relay": "workspace:*"
+    "@journeygap/relay": "workspace:*",
+    "typescript": "5.9.3"
   },
   "bin": {
     "journeygap": "./dist/main.js"
