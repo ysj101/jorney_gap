@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import { CliError, loadConfiguration, localPath } from "./config.js";
 import { importOtlp } from "./import.js";
+import { initProject } from "./init.js";
 import { formatReport, report } from "./report.js";
 
 export type CliIo = {
@@ -19,7 +20,33 @@ export async function run(
     const command = args[0];
     if (!command || command === "--help" || command === "help") {
       io.out(
-        "journeygap import --input traces.jsonl --db journeygap.db [--config file]\njourneygap report --db journeygap.db --journey ID [--service ID] [--days 7 | --from ISO] [--to ISO] [--grace-minutes 0] [--format text|json] [--config file]",
+        "journeygap init [--endpoint https://receiver.example/v1/traces] [--approve-config-change HASH]\njourneygap import --input traces.jsonl --db journeygap.db [--config file]\njourneygap report --db journeygap.db --journey ID [--service ID] [--days 7 | --from ISO] [--to ISO] [--grace-minutes 0] [--format text|json] [--config file]",
+      );
+      return 0;
+    }
+    if (command === "init") {
+      let values: { endpoint?: string; "approve-config-change"?: string };
+      try {
+        ({ values } = parseArgs({
+          args: args.slice(1),
+          options: {
+            endpoint: { type: "string" },
+            "approve-config-change": { type: "string" },
+          },
+        }));
+      } catch {
+        throw new CliError(
+          "Invalid init arguments; --force cannot overwrite existing files",
+        );
+      }
+      const result = await initProject(cwd, {
+        ...(values.endpoint === undefined ? {} : { endpoint: values.endpoint }),
+        ...(values["approve-config-change"] === undefined
+          ? {}
+          : { approveConfigChange: values["approve-config-change"] }),
+      });
+      io.out(
+        `JourneyGap ${result.status}. ${result.files.length ? `Changed: ${result.files.join(", ")}.` : "No files changed."} Navigation requires consent; connect app-specific outcomes using trackStep(). Review git diff --stat before committing.`,
       );
       return 0;
     }

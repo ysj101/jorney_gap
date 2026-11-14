@@ -47,6 +47,7 @@ export const configSchema = {
   ],
   properties: {
     schemaVersion: { const: 1 },
+    $comment: { type: "string", maxLength: 256 },
     enabled: { type: "boolean" },
     serviceName: id,
     serviceVersion: { type: "string", maxLength: 64 },
