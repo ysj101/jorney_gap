@@ -22,7 +22,7 @@ pnpm test
 pnpm audit
 ```
 
-Build before tests: package smoke tests resolve the actual generated ESM exports and declarations. `packages/core` provides configuration validation, OTLP sanitization, and analysis; see [configuration](docs/configuration.md), [event schema](docs/event-schema.md), and [analysis](docs/analysis.md). `relay` provides [SQLite storage](docs/storage.md); HTTP ingestion is pending. `web` and `cli` currently provide build scaffolding. Generated artifacts are excluded from Git.
+Build before tests: package smoke tests resolve the actual generated ESM exports and declarations. `packages/core` provides configuration validation, OTLP sanitization, and analysis; see [configuration](docs/configuration.md), [event schema](docs/event-schema.md), and [analysis](docs/analysis.md). `relay` provides [SQLite storage](docs/storage.md) and [local HTTP ingestion](docs/deploy.md). `web` and `cli` currently provide build scaffolding. Generated artifacts are excluded from Git.
 
 ## Intended integration
 

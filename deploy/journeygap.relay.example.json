@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "allowedOrigins": ["http://localhost:5173", "http://localhost:4173"],
+  "services": [
+    {
+      "serviceName": "sample-web",
+      "journeys": [
+        {
+          "id": "first-task",
+          "steps": [
+            { "id": "started" },
+            { "id": "reviewed" },
+            { "id": "completed", "terminal": true }
+          ],
+          "timeoutMinutes": 30
+        }
+      ]
+    }
+  ],
+  "retentionDays": 14,
+  "rateLimitPerMinute": 60,
+  "maxEvents": 100000,
+  "maxDatabaseBytes": 104857600
+}
