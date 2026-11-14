@@ -10,11 +10,13 @@ import {
   parseOtlpJson,
   validateRelayConfig,
 } from "@journeygap/core";
+import { AdminError, createAdmin } from "./admin.js";
 import { EventStore, StorageQuotaError } from "./storage.js";
 
 export type RelayOptions = {
   config: unknown;
   databasePath: string;
+  adminToken: string;
   now?: () => number;
 };
 class HttpError extends Error {
@@ -76,6 +78,10 @@ export function createRelay(options: RelayOptions) {
   if (!validated.valid) throw new Error("Invalid Relay configuration");
   const config = validated.value;
   const now = options.now ?? Date.now;
+  if (!/^[\x21-\x7e]{32,256}$/.test(options.adminToken))
+    throw new Error(
+      "A server-only admin token of 32–256 printable characters is required",
+    );
   const store = new EventStore(options.databasePath, {
     retentionDays: config.retentionDays,
     ...(config.maxEvents === undefined ? {} : { maxEvents: config.maxEvents }),
@@ -86,6 +92,7 @@ export function createRelay(options: RelayOptions) {
   });
   // Fixed-size, temporary IP buckets. No forwarded header is trusted or persisted.
   const buckets = new Map<string, { count: number; expires: number }>();
+  const admin = createAdmin({ token: options.adminToken, config, store, now });
   let globalBucket = { count: 0, expires: 0 };
   const stats = {
     acceptedRequests: 0,
@@ -117,6 +124,24 @@ export function createRelay(options: RelayOptions) {
     res: ServerResponse,
   ): Promise<void> {
     const path = req.url?.split("?", 1)[0];
+    if (path === "/admin/v1/report") {
+      if (!allowRequest(req)) throw new HttpError(429, "Rate limit exceeded");
+      try {
+        json(res, 200, admin(req));
+      } catch (error) {
+        if (error instanceof AdminError) {
+          if (error.status === 401)
+            res.setHeader(
+              "WWW-Authenticate",
+              'Bearer realm="JourneyGap admin"',
+            );
+          if (error.status === 405) res.setHeader("Allow", "GET");
+          throw new HttpError(error.status, error.message);
+        }
+        throw error;
+      }
+      return;
+    }
     if (path === "/healthz" && req.method === "GET") {
       json(res, 200, { status: "ok" });
       return;
