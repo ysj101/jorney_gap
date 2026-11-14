@@ -1,6 +1,6 @@
 # Web telemetry transport
 
-`@journeygap/web` exports initJourneyGap, getJourneyGapClient and trackStep, together with the shared public types. Navigation is a separate implementation task. Initialize once in a browser; repeated calls in the same tab return the same client. The module-level trackStep is a no-op before initialization. Invalid configuration, disabled collection, unavailable storage/crypto, or exporter failures stop only measurement.
+`@journeygap/web` exports initJourneyGap, getJourneyGapClient and trackStep, together with the shared public types. Initialize once in a browser; repeated calls in the same tab return the same client. The module-level trackStep is a no-op before initialization. Invalid configuration, disabled collection, unavailable storage/crypto, or exporter failures stop only measurement.
 
 ```ts
 import { initJourneyGap, trackStep } from "@journeygap/web";
@@ -11,6 +11,10 @@ const client = initJourneyGap({
   serviceName: "sample-web",
   otlpTracesEndpoint: "http://localhost:4318/v1/traces",
   consent: { mode: "opt-in", ui: "compact" },
+  routes: [
+    { id: "home", pattern: "/" },
+    { id: "item", pattern: "/items/:id" },
+  ],
   journeys: [
     {
       id: "first-task",
@@ -40,6 +44,14 @@ shutdown removes the SDK's UI/listeners, discards pending data, and releases its
 The transport uses a dedicated OpenTelemetry TracerProvider with resource service.name and a safe service.version when available. It never registers or replaces a global provider. Each event is a completed, independent short span started with ROOT_CONTEXT, with event/session/attempt correlations carried as explicit attributes. No automatic device, URL, user-agent or host-resource detection is installed. Declared journey/step IDs are checked again and custom values pass the shared privacy filter.
 
 Queue capacity is 100 events including the active batch; oldest unsent events are dropped on overflow. Batches run every five seconds, at most 20 spans per request. There is no persistent browser queue. Withdrawal discards the waiting queue synchronously, cancels the batching timer, aborts the active request and retry delay, and prevents subsequent records. Already delivered observations cannot be recalled. Lifecycle callers can await shutdown to release exporter/provider resources.
+
+## Navigation
+
+After consent the current route is observed, followed by hashchange, popstate and safe History API changes. Routes are slash-separated literal/`:parameter` templates, not regular expressions. More literal templates take precedence over dynamic alternatives; ties retain configuration order. Only the configured route ID is exported, never the matched URL or parameter. Unknown paths normalize to unknown. Queries and fragment identifiers are discarded; a `#/...` hash router is matched as a route path with its query/secondary fragment removed. Consecutive events for the same route ID are suppressed, including dynamic parameter changes within one template.
+
+An explicit same-origin `<base href="/demo/">` supplies a subpath prefix for pathname matching; hash routing is independent of that prefix. Without a base element, configure templates for the actual pathname (including its deployment prefix). The SDK does not guess a base from a URL that might itself be a dynamic route. Static builds can use explicit prefixed patterns, a base element, or hash routes without collecting the raw prefix.
+
+History methods are patched only when they match native prototype functions. An existing foreign patch or nonnative implementation uses hashchange/popstate fallback. A failed/nonwritable patch is rolled back. Wrappers preserve the original operation's return/exception behavior and catch only observation errors. Shutdown restores only methods still owned by this SDK; a later foreign wrapper is left intact, with the embedded JourneyGap observer disabled. Withdrawal resets deduplication so a later grant observes the then-current route again. No navigation event or event ID is generated while consent is off.
 
 ## Official exporter and bounded transport
 
