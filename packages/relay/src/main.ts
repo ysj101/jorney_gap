@@ -11,6 +11,7 @@ try {
       host: { type: "string", default: "127.0.0.1" },
       port: { type: "string", default: "4318" },
       help: { type: "boolean" },
+      diagnostics: { type: "boolean" },
     },
   });
   if (values.help) {
@@ -34,6 +35,17 @@ try {
       config,
       databasePath: values.db,
       adminToken: process.env.JOURNEYGAP_ADMIN_TOKEN ?? "",
+      ...(process.env.JOURNEYGAP_UPSTREAM_OTLP_TRACES_ENDPOINT
+        ? {
+            upstream: {
+              development: process.env.NODE_ENV === "development",
+              endpoint: process.env.JOURNEYGAP_UPSTREAM_OTLP_TRACES_ENDPOINT,
+              ...(process.env.JOURNEYGAP_UPSTREAM_AUTH_HEADER
+                ? { authorization: process.env.JOURNEYGAP_UPSTREAM_AUTH_HEADER }
+                : {}),
+            },
+          }
+        : {}),
     });
     try {
       console.log(
@@ -43,7 +55,12 @@ try {
       await relay.close();
       throw error;
     }
+    const diagnostics = values.diagnostics
+      ? setInterval(() => console.error(JSON.stringify(relay.stats())), 60000)
+      : undefined;
+    diagnostics?.unref();
     const stop = () => {
+      clearInterval(diagnostics);
       void relay.close().catch(() => {
         process.exitCode = 1;
       });

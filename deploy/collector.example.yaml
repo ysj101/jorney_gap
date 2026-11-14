@@ -1,0 +1,33 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:14318
+        cors:
+          allowed_origins:
+            - http://localhost:5173
+            - http://localhost:4173
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 128
+    spike_limit_mib: 32
+  batch:
+    timeout: 1s
+    send_batch_size: 20
+exporters:
+  file:
+    path: /tmp/journeygap-traces.jsonl
+    rotation:
+      max_megabytes: 10
+      max_backups: 1
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [file]

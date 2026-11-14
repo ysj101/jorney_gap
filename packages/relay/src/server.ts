@@ -11,12 +11,14 @@ import {
   validateRelayConfig,
 } from "@journeygap/core";
 import { AdminError, createAdmin } from "./admin.js";
+import { createForwarder, type ForwardOptions } from "./forward.js";
 import { EventStore, StorageQuotaError } from "./storage.js";
 
 export type RelayOptions = {
   config: unknown;
   databasePath: string;
   adminToken: string;
+  upstream?: ForwardOptions;
   now?: () => number;
 };
 class HttpError extends Error {
@@ -78,6 +80,9 @@ export function createRelay(options: RelayOptions) {
   if (!validated.valid) throw new Error("Invalid Relay configuration");
   const config = validated.value;
   const now = options.now ?? Date.now;
+  const forwarder = options.upstream
+    ? createForwarder(options.upstream)
+    : undefined;
   if (!/^[\x21-\x7e]{32,256}$/.test(options.adminToken))
     throw new Error(
       "A server-only admin token of 32–256 printable characters is required",
@@ -228,6 +233,7 @@ export function createRelay(options: RelayOptions) {
     stats.errorEvents += parsed.events.filter(
       (event) => event.eventType === "error",
     ).length;
+    forwarder?.enqueue(parsed.sanitized);
     json(res, 200, {});
   }
   const server = createServer(
@@ -262,7 +268,10 @@ export function createRelay(options: RelayOptions) {
     server,
     store,
     config,
-    stats: () => ({ ...stats }),
+    stats: () => ({ ...stats, forwarding: forwarder?.stats() ?? null }),
+    forwardIdle: async () => {
+      await forwarder?.idle();
+    },
     async listen(port = 4318, host = "127.0.0.1"): Promise<string> {
       if (closed) throw new Error("Relay is closed");
       await new Promise<void>((resolve, reject) => {
@@ -283,6 +292,7 @@ export function createRelay(options: RelayOptions) {
       closed = true;
       clearInterval(sweep);
       buckets.clear();
+      await forwarder?.close();
       await new Promise<void>((resolve) => {
         server.close(() => resolve());
         server.closeAllConnections();
