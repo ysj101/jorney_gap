@@ -4,7 +4,7 @@ JourneyGap observes application-defined journeys using OpenTelemetry traces and 
 
 ## Development status
 
-Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. Shared validation, privacy filtering, journey analysis, the Relay, and the internal Web OTLP transport are implemented. Web consent/navigation, CLI, and browser acceptance tests are being implemented in the [issue tracker](https://github.com/ysj101/jorney_gap/issues). The full contract is in [docs/spec.md](docs/spec.md).
+Pre-release implementation. The `@journeygap/*` names are provisional and the packages are **not published**. Shared validation, privacy filtering, journey analysis, the Relay, and the consent-gated Web client/OTLP transport are implemented. Navigation, CLI, and browser acceptance tests are being implemented in the [issue tracker](https://github.com/ysj101/jorney_gap/issues). The full contract is in [docs/spec.md](docs/spec.md).
 
 ## Build from source
 
@@ -22,7 +22,7 @@ pnpm test
 pnpm audit
 ```
 
-Build before tests: package smoke tests resolve the actual generated ESM exports and declarations. `packages/core` provides configuration validation, OTLP sanitization, and analysis; see [configuration](docs/configuration.md), [event schema](docs/event-schema.md), and [analysis](docs/analysis.md). `relay` provides [SQLite storage](docs/storage.md) and [local HTTP ingestion](docs/deploy.md). `web` and `cli` currently provide build scaffolding. Generated artifacts are excluded from Git.
+Build before tests: package smoke tests resolve the actual generated ESM exports and declarations. `packages/core` provides configuration validation, OTLP sanitization, and analysis; see [configuration](docs/configuration.md), [event schema](docs/event-schema.md), and [analysis](docs/analysis.md). `relay` provides [SQLite storage](docs/storage.md) and [local HTTP ingestion](docs/deploy.md). `web` provides the [consent-gated client](docs/web.md). `cli` currently provides build scaffolding. Generated artifacts are excluded from Git.
 
 ## Intended integration
 

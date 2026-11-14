@@ -1,6 +1,41 @@
 # Web telemetry transport
 
-The SDK transport is implemented internally; the consent-gated public client is a separate implementation task. Do not instantiate telemetry before consent. Browser initialization and navigation examples will be added with those APIs.
+`@journeygap/web` exports initJourneyGap, getJourneyGapClient and trackStep, together with the shared public types. Navigation is a separate implementation task. Initialize once in a browser; repeated calls in the same tab return the same client. The module-level trackStep is a no-op before initialization. Invalid configuration, disabled collection, unavailable storage/crypto, or exporter failures stop only measurement.
+
+```ts
+import { initJourneyGap, trackStep } from "@journeygap/web";
+
+const client = initJourneyGap({
+  schemaVersion: 1,
+  enabled: true,
+  serviceName: "sample-web",
+  otlpTracesEndpoint: "http://localhost:4318/v1/traces",
+  consent: { mode: "opt-in", ui: "compact" },
+  journeys: [
+    {
+      id: "first-task",
+      steps: [
+        { id: "started" },
+        { id: "reviewed" },
+        { id: "completed", terminal: true },
+      ],
+      timeoutMinutes: 30,
+    },
+  ],
+});
+
+// Call at actual application-defined milestones. Calls before consent do nothing.
+trackStep("first-task", "started");
+trackStep("first-task", "reviewed");
+trackStep("first-task", "completed");
+client.trackError("network"); // No error message, URL or stack is accepted.
+```
+
+Compact consent offers native allow/refuse buttons with equal choices and a live status. It does not capture focus or block the application and requires no inline script/style CSP exception. Controls remain available for withdrawal. Only the choice is stored in localStorage (`journeygap.consent.v1`). A prior explicit compact grant can resume collection on reload. External mode renders no UI and requires `client.setConsent(true)` from the host consent manager on every initialization, even if a previous choice is stored. Call setConsent(false) to withdraw immediately; cross-tab withdrawal and cleared consent storage also stop collection.
+
+Session IDs are cryptographic UUIDv4 values created only after grant and stored only in sessionStorage (`journeygap.session.v1`). A copied opener session is rotated for a newly opened tab when the same-origin opener is accessible. Reload/reinitialization can reuse the same tab session; withdrawal deletes it. Each journey has an independent current instance; the first step creates a new instance, and another first step supersedes the previous one. Identical consecutive calls in one JavaScript turn are suppressed to reduce StrictMode/effect repeats, while later restarts get new IDs. Undefined combinations and nonfirst steps without an observed start do nothing. Valid order anomalies within an instance remain observable for the analyzer.
+
+shutdown removes the SDK's UI/listeners, discards pending data, and releases its provider without changing the saved preference or the host's UI. The session remains available for a same-tab restart unless consent was withdrawn. Existing application storage is never read or uploaded except the SDK's own choice and session keys. A tab-scoped ID is a pseudonymous identifier, not a guarantee of absolute anonymity; operators must provide the adapted privacy notice.
 
 The transport uses a dedicated OpenTelemetry TracerProvider with resource service.name and a safe service.version when available. It never registers or replaces a global provider. Each event is a completed, independent short span started with ROOT_CONTEXT, with event/session/attempt correlations carried as explicit attributes. No automatic device, URL, user-agent or host-resource detection is installed. Declared journey/step IDs are checked again and custom values pass the shared privacy filter.
 
