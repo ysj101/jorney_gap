@@ -1,6 +1,7 @@
 export * from "./analyze.js";
 export {
   configSchema,
+  exporterConfigSchema,
   journeySchema,
   relayConfigSchema,
 } from "./config-schema.js";

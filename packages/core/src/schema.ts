@@ -1,7 +1,12 @@
-import { validateRelay, validateWeb } from "./generated/validators.cjs";
+import {
+  validateExporterWeb,
+  validateRelay,
+  validateWeb,
+} from "./generated/validators.cjs";
 import type {
   JourneyDefinition,
   JourneyGapConfig,
+  JourneyGapExporterConfig,
   RelayConfig,
 } from "./types.js";
 
@@ -67,6 +72,49 @@ function clone(input: unknown): unknown {
   return JSON.parse(json);
 }
 
+function commonWebErrors(value: JourneyGapExporterConfig): string[] {
+  const errors = journeyErrors(value.journeys);
+  if (value.routes) {
+    errors.push(...duplicateIds(value.routes, "routes"));
+    const patterns = new Set(value.routes.map((route) => route.pattern));
+    if (patterns.size !== value.routes.length)
+      errors.push("Duplicate route patterns");
+    if (
+      value.routes.some(
+        (route) =>
+          !/^\/(?:[a-zA-Z0-9._~-]+|:[a-zA-Z][a-zA-Z0-9_]*)(?:\/(?:[a-zA-Z0-9._~-]+|:[a-zA-Z][a-zA-Z0-9_]*))*\/?$/.test(
+            route.pattern,
+          ) && route.pattern !== "/",
+      )
+    )
+      errors.push("Invalid route pattern");
+  }
+  return errors;
+}
+
+export function validateExporterConfig(
+  input: unknown,
+): ValidationResult<JourneyGapExporterConfig> {
+  try {
+    const value = clone(input);
+    if (
+      !(
+        validateExporterWeb as (
+          value: unknown,
+        ) => value is JourneyGapExporterConfig
+      )(value)
+    )
+      return {
+        valid: false,
+        errors: ["Configuration does not match exporter JSON Schema"],
+      };
+    const errors = commonWebErrors(value);
+    return errors.length ? { valid: false, errors } : { valid: true, value };
+  } catch {
+    return { valid: false, errors: ["Invalid JSON configuration"] };
+  }
+}
+
 export function validateConfig(
   input: unknown,
 ): ValidationResult<JourneyGapConfig> {
@@ -77,26 +125,11 @@ export function validateConfig(
         valid: false,
         errors: ["Configuration does not match JSON Schema"],
       };
-    const errors = journeyErrors(value.journeys);
+    const errors = commonWebErrors(value);
     if (!isSafeEndpoint(value.otlpTracesEndpoint))
       errors.push(
         "Endpoint must be HTTPS or loopback HTTP without credentials/query/fragment",
       );
-    if (value.routes) {
-      errors.push(...duplicateIds(value.routes, "routes"));
-      const patterns = new Set(value.routes.map((route) => route.pattern));
-      if (patterns.size !== value.routes.length)
-        errors.push("Duplicate route patterns");
-      if (
-        value.routes.some(
-          (route) =>
-            !/^\/(?:[a-zA-Z0-9._~-]+|:[a-zA-Z][a-zA-Z0-9_]*)(?:\/(?:[a-zA-Z0-9._~-]+|:[a-zA-Z][a-zA-Z0-9_]*))*\/?$/.test(
-              route.pattern,
-            ) && route.pattern !== "/",
-        )
-      )
-        errors.push("Invalid route pattern");
-    }
     return errors.length ? { valid: false, errors } : { valid: true, value };
   } catch {
     return { valid: false, errors: ["Invalid JSON configuration"] };

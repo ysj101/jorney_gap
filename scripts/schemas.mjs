@@ -1,11 +1,13 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import {
   configSchema,
+  exporterConfigSchema,
   relayConfigSchema,
 } from "../packages/core/dist/config-schema.js";
 
 for (const [name, schema] of [
   ["journeygap", configSchema],
+  ["exporter", exporterConfigSchema],
   ["relay", relayConfigSchema],
 ]) {
   const path = new URL(
