@@ -92,6 +92,26 @@ export const configSchema = {
   },
 } as const;
 
+/** Endpoint-free configuration for an application-supplied exporter. */
+export const exporterConfigSchema = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  $id: "https://journeygap.dev/schema/exporter.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "enabled", "serviceName", "consent", "journeys"],
+  properties: {
+    schemaVersion: configSchema.properties.schemaVersion,
+    $comment: configSchema.properties.$comment,
+    enabled: configSchema.properties.enabled,
+    serviceName: configSchema.properties.serviceName,
+    serviceVersion: configSchema.properties.serviceVersion,
+    consent: configSchema.properties.consent,
+    routes: configSchema.properties.routes,
+    journeys: configSchema.properties.journeys,
+    attributesAllowlist: configSchema.properties.attributesAllowlist,
+  },
+} as const;
+
 export const relayConfigSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   $id: "https://journeygap.dev/schema/relay.schema.json",

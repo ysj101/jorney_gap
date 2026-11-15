@@ -1,9 +1,11 @@
 import {
   type JourneyGapClient,
   type JourneyGapConfig,
+  type JourneyGapExporterConfig,
   sanitizeAttributes,
   type TrackAttributes,
   validateConfig,
+  validateExporterConfig,
 } from "@journeygap/core";
 import {
   CONSENT_KEY,
@@ -13,6 +15,7 @@ import {
   readConsent,
   SESSION_KEY,
 } from "./consent.js";
+import type { JourneyGapExporterOptions } from "./exporter.js";
 import { observeNavigation } from "./navigation.js";
 import { createTelemetry, type Telemetry, type WebEvent } from "./transport.js";
 
@@ -61,7 +64,10 @@ export function trackStep(
   }
 }
 
-function createClient(config: JourneyGapConfig): Registry {
+function createClient(
+  config: JourneyGapExporterConfig,
+  options?: JourneyGapExporterOptions,
+): Registry {
   let consent = false;
   let sessionId: string | undefined;
   let telemetry: Telemetry | undefined;
@@ -130,11 +136,14 @@ function createClient(config: JourneyGapConfig): Registry {
       consent = value;
       if (value) {
         sessionId = session();
-        telemetry = createTelemetry(config);
+        telemetry = createTelemetry(config, options);
         navigation?.refresh();
       } else stop();
       ui?.update(value);
     } catch {
+      consent = false;
+      stop();
+      ui?.update(false);
       /* Telemetry construction/storage failure never reaches the app. */
     }
   }
@@ -197,6 +206,9 @@ function createClient(config: JourneyGapConfig): Registry {
       }
     },
     setConsent,
+    flush: async () => {
+      await telemetry?.flush().catch(() => {});
+    },
     getConsent: () => !closed && config.enabled && consent,
     async shutdown() {
       if (closed) return;
@@ -253,15 +265,26 @@ function createClient(config: JourneyGapConfig): Registry {
   return entry;
 }
 
-export function initJourneyGap(input: JourneyGapConfig): JourneyGapClient {
+export function initJourneyGap(input: JourneyGapConfig): JourneyGapClient;
+export function initJourneyGap(
+  input: JourneyGapExporterConfig,
+  options: JourneyGapExporterOptions,
+): JourneyGapClient;
+export function initJourneyGap(
+  input: JourneyGapConfig | JourneyGapExporterConfig,
+  options?: JourneyGapExporterOptions,
+): JourneyGapClient {
   try {
     if (typeof window === "undefined" || typeof document === "undefined")
       return noop;
     const existing = registry();
     if (existing) return existing.client;
-    const validated = validateConfig(input);
+    if (options && typeof options.createExporter !== "function") return noop;
+    const validated = options
+      ? validateExporterConfig(input)
+      : validateConfig(input);
     if (!validated.valid) return noop;
-    const value = createClient(validated.value);
+    const value = createClient(validated.value, options);
     if (!Reflect.set(window, KEY, value)) {
       void value.client.shutdown().catch(() => {});
       return noop;

@@ -64,3 +64,45 @@ Each batch has a three-second total deadline, an initial attempt and at most two
 The exporter invokes completion callbacks before releasing its pending-export slot. The batch processor awaits exporter forceFlush between batches to preserve the configured single-flight limit. Tests exercise all 100 retained events across five actual serialized batches, not only the first batch.
 
 Browser CORS/CSP, page unload delivery and app responsiveness are verified by the browser acceptance suite; Node transport tests alone do not prove those browser properties. Standard Collector round-trip tests are tracked separately from transport unit tests.
+
+## Application-supplied exporters
+
+Browser distributions can provide an OpenTelemetry `SpanExporter` without putting
+vendor-specific code or a fictitious OTLP endpoint into JourneyGap:
+
+```ts
+const client = initJourneyGap(
+  {
+    schemaVersion: 1,
+    enabled: true,
+    serviceName: "sample-web",
+    consent: { mode: "opt-in", ui: "external" },
+    journeys: [
+      {
+        id: "task",
+        steps: [{ id: "started" }, { id: "done", terminal: true }],
+        timeoutMinutes: 30,
+      },
+    ],
+  },
+  {
+    createExporter: () => ({
+      exporter: makeApplicationExporter(),
+      discard: () => abortApplicationRequests(),
+    }),
+  },
+);
+```
+
+This overload validates `JourneyGapExporterConfig` (the endpoint-free
+`schema/exporter.schema.json`). Unknown properties, endpoints and tokens are
+rejected. The existing one-argument OTLP API and its endpoint rules are unchanged.
+`createExporter` is called only after consent and once per grant epoch. The
+factory must return fresh, independently disposable resources; `discard()` must
+synchronously discard pending work and abort requests. Optional `forceFlush()`
+awaits adapter-owned delivery. An optional `requests()` exposes only a count.
+No global tracer provider is registered. Export callbacks and async cleanup are
+bounded; extension failures stop measurement only. Factory failure leaves consent
+inactive. `client.flush()` is best effort: exporter success or HTTP acceptance is
+not a guarantee that a remote backend has stored the observations. Shutdown
+continues to discard rather than implicitly drain records.

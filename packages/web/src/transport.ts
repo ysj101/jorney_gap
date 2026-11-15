@@ -1,6 +1,7 @@
 import {
   isDefinedStep,
   type JourneyGapConfig,
+  type JourneyGapExporterConfig,
   safeVersion,
   sanitizeAttributes,
   type TrackAttributes,
@@ -12,6 +13,10 @@ import {
   type SpanProcessor,
   TracerProvider,
 } from "@opentelemetry/sdk-trace";
+import type {
+  JourneyGapExporter,
+  JourneyGapExporterOptions,
+} from "./exporter.js";
 import { createBoundedExporter } from "./otlp.js";
 
 export type WebEvent = {
@@ -27,35 +32,92 @@ export type WebEvent = {
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+/** Prevent a broken extension from keeping flush/shutdown pending forever. */
+async function bounded(
+  operation: () => Promise<unknown> | undefined,
+): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      Promise.resolve().then(operation),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, 3000);
+      }),
+    ]);
+  } catch {
+    /* Extension failures affect measurement only. */
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Internal factory, called only after consent. Never registers a global provider. */
-export function createTelemetry(config: JourneyGapConfig) {
-  const output = createBoundedExporter(config.otlpTracesEndpoint);
+export function createTelemetry(
+  config: JourneyGapConfig | JourneyGapExporterConfig,
+  options?: JourneyGapExporterOptions,
+) {
+  const output: JourneyGapExporter = options
+    ? options.createExporter()
+    : createBoundedExporter((config as JourneyGapConfig).otlpTracesEndpoint);
+  if (
+    !output ||
+    typeof output.exporter?.export !== "function" ||
+    typeof output.exporter.shutdown !== "function" ||
+    typeof output.discard !== "function"
+  ) {
+    try {
+      output?.discard?.();
+    } catch {
+      /* Release partially constructed adapters. */
+    }
+    throw new Error("Invalid custom exporter");
+  }
   const queue: ReadableSpan[] = [];
   let stopped = false;
   let flushing: Promise<void> | undefined;
   let inFlight = 0;
+  const pendingExports = new Set<(success: boolean) => void>();
   const counters = { dropped: 0, exported: 0, failed: 0 };
   function discard(): void {
     stopped = true;
     counters.dropped += queue.length;
     queue.length = 0;
     clearInterval(timer);
-    output.discard();
+    for (const finish of pendingExports) finish(false);
+    try {
+      output.discard();
+    } catch {
+      /* Continue releasing provider resources. */
+    }
   }
   async function flushBatches(): Promise<void> {
     while (!stopped && queue.length) {
       const batch = queue.splice(0, 20);
       inFlight = batch.length;
       const success = await new Promise<boolean>((resolve) => {
+        let finished = false;
+        const finish = (ok: boolean) => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          pendingExports.delete(finish);
+          resolve(ok);
+        };
+        const timer = setTimeout(() => finish(false), 3000);
+        pendingExports.add(finish);
         try {
-          output.exporter.export(batch, (result) => resolve(result.code === 0));
+          output.exporter.export(batch, (result) => finish(result.code === 0));
         } catch {
-          resolve(false);
+          finish(false);
         }
       });
       // The official exporter invokes its callback before releasing the pending
       // export slot. Await that slot before submitting the next bounded batch.
-      await output.exporter.forceFlush().catch(() => {});
+      await bounded(() =>
+        output.forceFlush
+          ? output.forceFlush()
+          : output.exporter.forceFlush?.(),
+      );
       if (success) counters.exported += batch.length;
       else counters.failed += batch.length;
       inFlight = 0;
@@ -82,7 +144,7 @@ export function createTelemetry(config: JourneyGapConfig) {
     async shutdown() {
       discard();
       await flushing;
-      await output.exporter.shutdown();
+      await bounded(() => output.exporter.shutdown());
     },
   };
   const resource: Record<string, string> = {
@@ -163,7 +225,7 @@ export function createTelemetry(config: JourneyGapConfig) {
       ...counters,
       queued: queue.length,
       inFlight,
-      requests: output.requests(),
+      requests: output.requests?.() ?? 0,
     }),
   };
 }
